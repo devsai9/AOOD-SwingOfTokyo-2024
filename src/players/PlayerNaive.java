@@ -1,3 +1,5 @@
+package players;
+
 public class PlayerNaive extends Player {
     public boolean[] rerollDice(int currentTurn, int currentPlayer, int inTokyo, int[] dice, int[] playerHealths, int[] playerFames) {
         // Re-roll if not 6

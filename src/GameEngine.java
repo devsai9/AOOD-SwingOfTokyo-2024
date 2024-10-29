@@ -1,9 +1,10 @@
 import java.util.Arrays;
 import java.util.ArrayList;
+import players.*;
 
 public class GameEngine {
     private State state = new State();
-    private Player[] players = new Player[8];
+    private Player[] players = new Player[3];
     private boolean[] deadPlayers = new boolean[8];
         
     private int playersLeft = 0;
@@ -24,7 +25,7 @@ public class GameEngine {
         state.setInTokyo(-1);
 
         players[0] = new PlayerAI_GeeterPriffin();
-        players[1] = new NaivePlusPlus();
+        players[1] = new PlayerNaive();
         players[2] = new PlayerNaive();
 
         deadPlayers = new boolean[players.length];
@@ -60,14 +61,9 @@ public class GameEngine {
         for (int i = 0; i < 1000; i++) {
             state.setInTokyo(-1);
 
-            players[0] = new NaivePlusPlus();
-            players[1] = new PlayerAI_GeeterPriffin();
-            players[2] = new PlayerAI_John();
-            players[3] = new PlayerAI_Kirby();
-            players[4] = new PlayerAI_Loser();
-            players[5] = new PlayerAI_placeholder(6);
-            players[6] = new PlayerAI_Shane();
-            players[7] = new PlayerAI_TAIbleFlip();
+            players[0] = new PlayerAI_GeeterPriffin();
+            players[1] = new PlayerNaive();
+            players[2] = new PlayerNaive();
 
             deadPlayers = new boolean[players.length];
             
@@ -77,7 +73,6 @@ public class GameEngine {
             }
             
             playersLeft = players.length;
-            
             
             int[] tempH = new int[players.length];
             int[] tempF = new int[players.length];
@@ -357,9 +352,9 @@ public class GameEngine {
                         
                         state.setCurrentPlayer(abc[1]);
                         // Prompt currentPlayer if they would like to leave Tokyo
-                        if (players[state.getInTokyo()] instanceof PlayerHuman && outputting) {
-                            System.out.print("\n" + "Player #" + (state.getInTokyo() + 1) + ": ");
-                        }
+//                        if (players[state.getInTokyo()] instanceof PlayerHuman && outputting) {
+//                            System.out.print("\n" + "Player #" + (state.getInTokyo() + 1) + ": ");
+//                        }
                         boolean playerAchoosesToStay = players[abc[1]].leaveTokyo(state.getCurrentTurn(), state.getCurrentPlayer(), state.getInTokyo(), state.getDice(), state.getPlayerHealths(), state.getPlayerFames());
                         if (playerAchoosesToStay) {
                             // Player A chooses to stay, so switch back

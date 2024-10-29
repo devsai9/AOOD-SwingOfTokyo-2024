@@ -1,3 +1,5 @@
+package players;
+
 public class PlayerAI_GeeterPriffin extends Player {
     public boolean[] rerollDice(int currentTurn, int currentPlayer, int inTokyo, int[] dice, int[] playerHealths, int[] playerFames) {
         
