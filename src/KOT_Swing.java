@@ -21,14 +21,16 @@ public class KOT_Swing {
     JComboBox<String> ooPauseBetweenGamesC;
     JLabel ooNumOfGamesL;
     JTextField ooNumOfGamesT;
+    int numOfGames = 1;
     JButton playButton;
 
     JLabel kotLogo;
     JTable playersTable;
+    Object[][] playersData;
 
     static int windowWidth = 950;
     static int windowHeight = 600;
-    final static String pathPrefix = "D:/Code_Projects/AOOD-KOTUI-2024/src/";
+    final static String pathPrefix = "C:/Users/Sai Chandra/IdeaProjects/AOOD-KOTUI-2024/src/";
 
     public KOT_Swing() {
         frame = new JFrame("King of Tokyo GUI");
@@ -59,14 +61,14 @@ public class KOT_Swing {
         gbc.gridx = 0;
         gbc.gridy = 0;
         gbc.anchor = GridBagConstraints.NORTH;
-        gbc.fill = GridBagConstraints.HORIZONTAL;
+        gbc.fill = GridBagConstraints.CENTER;
         gbc.weightx = 0.33;
         panel.add(otherOptions, gbc);
 
         kotLogo = new JLabel("KOT Logo");
         gbc.gridx = 1;
         gbc.weightx = 0.34;
-        gbc.fill = GridBagConstraints.BOTH;
+        gbc.fill = GridBagConstraints.CENTER;
         panel.add(kotLogo, gbc);
 
         initializePlayersTable();
@@ -77,9 +79,8 @@ public class KOT_Swing {
         gbc.gridx = 2;
         gbc.gridy = 0;
         gbc.weightx = 0.33;
-        gbc.fill = GridBagConstraints.HORIZONTAL;
+        gbc.fill = GridBagConstraints.CENTER;
         panel.add(scrollPane, gbc);
-
         setSizeRelatedProperties();
 
         frame.add(panel);
@@ -89,7 +90,7 @@ public class KOT_Swing {
     private void initializePlayersTable() {
         String[] columnNames = {"Player ID", "Player Type"};
 
-        Object[][] data = {
+        playersData = new Object[][] {
                 {"0", "Player_Naive.java"},
                 {"1", "Player_AI.java"},
                 {"2", "Player_AI.java"},
@@ -98,7 +99,7 @@ public class KOT_Swing {
                 {"5", "Player_Naive.java"}
         };
 
-        DefaultTableModel model = new DefaultTableModel(data, columnNames) {
+        DefaultTableModel model = new DefaultTableModel(playersData, columnNames) {
             @Override
             public boolean isCellEditable(int row, int col) {
                 return col == 1;
@@ -126,10 +127,29 @@ public class KOT_Swing {
         return headerHeight + (rowHeight * numberOfRows);
     }
 
+    private void reconfigureTable(int rows) {
+        // TODO: Add row deletion
+        int currentRows = playersTable.getRowCount();
+
+        Object[][] dataL = new Object[rows][2];
+
+        for (int i = 0; i < rows; i++) {
+            dataL[i] = playersData[i];
+        }
+
+        if (rows > currentRows) {
+            for (int i = currentRows - 1; i < rows; i++) {
+                playersData[i] = new Object[]{String.valueOf(i), "Player_Naive.java"};
+            }
+        }
+
+        playersData = dataL;
+    }
+
     private void setSizeRelatedProperties() {
         panel.setBounds(0, 0, windowWidth, windowHeight);
         kotLogo.setText("");
-        kotLogo.setIcon(new ImageIcon(new ImageIcon(pathPrefix + "assets/kingOfTokyoLogo.png").getImage().getScaledInstance(windowWidth / 3, (int) ((windowWidth / 3.0) * (995.0 / 1543.0)), Image.SCALE_SMOOTH)));
+        kotLogo.setIcon(new ImageIcon(new ImageIcon(pathPrefix + "assets/kingOfTokyoLogo.png").getImage().getScaledInstance(windowWidth / 3, (int) ((windowWidth / 3.0) * (757.0 / 1105.0)), Image.SCALE_SMOOTH)));
         frame.revalidate();
         frame.repaint();
     }
@@ -189,7 +209,7 @@ public class KOT_Swing {
         gbc.gridy = 4;
         otherOptions.add(ooNumOfGamesL, gbc);
 
-        ooNumOfGamesT = new JTextField(5);
+        ooNumOfGamesT = new JTextField("" + numOfGames, 5);
         gbc.gridx = 1;
         otherOptions.add(ooNumOfGamesT, gbc);
 
