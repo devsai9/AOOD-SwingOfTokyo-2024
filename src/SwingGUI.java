@@ -24,17 +24,16 @@ public class SwingGUI {
     // Main Window
     JPanelWithBg panel;
 
-    JPanel otherOptions;
-    JLabel ooHeading;
-    JLabel ooNumOfPlayersL;
-    JComboBox<String> ooNumOfPlayersC;
-    JLabel ooReportResultsL;
-    JComboBox<String> ooReportResultsC;
-    JLabel ooPauseBetweenGamesL;
-    JComboBox<String> ooPauseBetweenGamesC;
-    JLabel ooNumOfGamesL;
-    JTextField ooNumOfGamesT;
-    int numOfGames = 1;
+    JPanel options;
+    JLabel oHeading;
+    JLabel oNumOfPlayersL;
+    JComboBox<String> oNumOfPlayersC;
+    JLabel oReportResultsL;
+    JComboBox<String> oReportResultsC;
+    JLabel oPauseBetweenGamesL;
+    JComboBox<String> oPauseBetweenGamesC;
+    JLabel oNumOfGamesL;
+    JTextField oNumOfGamesT;
     JButton playButton;
 
     JLabel kotLogo;
@@ -79,8 +78,8 @@ public class SwingGUI {
         panel.setBackground(Color.WHITE);
         panel.setLayout(new GridBagLayout());
 
-        otherOptions = new JPanel();
-        initializeOtherOptions();
+        options = new JPanel();
+        initializeOptions();
 
         GridBagConstraints gbc = new GridBagConstraints();
         gbc.gridx = 0;
@@ -88,7 +87,7 @@ public class SwingGUI {
         gbc.anchor = GridBagConstraints.CENTER;
         gbc.fill = GridBagConstraints.CENTER;
         gbc.weightx = 0.33;
-        panel.add(otherOptions, gbc);
+        panel.add(options, gbc);
 
         kotLogo = new JLabel("KOT Logo");
         gbc.gridx = 1;
@@ -124,66 +123,66 @@ public class SwingGUI {
     }
 
     // Helper methods
-    private void initializeOtherOptions() {
-        otherOptions.setLayout(new GridBagLayout());
-        otherOptions.setBackground(new Color(0, 51, 153));
-        otherOptions.setBorder(BorderFactory.createEmptyBorder(20, 20, 20, 20));
+    private void initializeOptions() {
+        options.setLayout(new GridBagLayout());
+        options.setBackground(new Color(0, 51, 153));
+        options.setBorder(BorderFactory.createEmptyBorder(20, 20, 20, 20));
 
         GridBagConstraints gbc = new GridBagConstraints();
         gbc.insets = new Insets(10, 10, 10, 10);
         gbc.fill = GridBagConstraints.HORIZONTAL;
 
-        ooHeading = new JLabel("Other Options");
-        ooHeading.setForeground(Color.WHITE);
-        ooHeading.setFont(new Font("Arial", Font.BOLD, 18));
+        oHeading = new JLabel("Options");
+        oHeading.setForeground(Color.WHITE);
+        oHeading.setFont(new Font("Arial", Font.BOLD, 18));
         gbc.gridx = 0;
         gbc.gridy = 0;
         gbc.gridwidth = 2;
         gbc.anchor = GridBagConstraints.CENTER;
-        otherOptions.add(ooHeading, gbc);
+        options.add(oHeading, gbc);
 
-        ooNumOfPlayersL = new JLabel("Number of players:");
-        ooNumOfPlayersL.setForeground(Color.WHITE);
+        oNumOfPlayersL = new JLabel("Number of players:");
+        oNumOfPlayersL.setForeground(Color.WHITE);
         gbc.gridy = 1;
         gbc.gridwidth = 1;
         gbc.anchor = GridBagConstraints.WEST;
-        otherOptions.add(ooNumOfPlayersL, gbc);
+        options.add(oNumOfPlayersL, gbc);
 
-        ooNumOfPlayersC = new JComboBox<>(new String[]{"2", "3", "4", "5", "6"});
+        oNumOfPlayersC = new JComboBox<>(new String[]{"2", "3", "4", "5", "6"});
         gbc.gridx = 1;
-        ooNumOfPlayersC.addActionListener(new numOfPlayersComboBoxChange());
-        // ooNumOfPlayersC.setSelectedIndex(4);
-        otherOptions.add(ooNumOfPlayersC, gbc);
+        oNumOfPlayersC.addActionListener(new numOfPlayersComboBoxChange());
+        // oNumOfPlayersC.setSelectedIndex(4);
+        options.add(oNumOfPlayersC, gbc);
 
-        ooReportResultsL = new JLabel("Report results?");
-        ooReportResultsL.setForeground(Color.WHITE);
+        oReportResultsL = new JLabel("Report results?");
+        oReportResultsL.setForeground(Color.WHITE);
         gbc.gridx = 0;
         gbc.gridy = 2;
-        otherOptions.add(ooReportResultsL, gbc);
+        options.add(oReportResultsL, gbc);
 
-        ooReportResultsC = new JComboBox<>(new String[]{"Per game", "Overall"});
+        oReportResultsC = new JComboBox<>(new String[]{"Per game", "Overall"});
         gbc.gridx = 1;
-        otherOptions.add(ooReportResultsC, gbc);
+        options.add(oReportResultsC, gbc);
 
-        ooPauseBetweenGamesL = new JLabel("Pause between games?");
-        ooPauseBetweenGamesL.setForeground(Color.WHITE);
+        oPauseBetweenGamesL = new JLabel("Pause between games?");
+        oPauseBetweenGamesL.setForeground(Color.WHITE);
         gbc.gridx = 0;
         gbc.gridy = 3;
-        otherOptions.add(ooPauseBetweenGamesL, gbc);
+        options.add(oPauseBetweenGamesL, gbc);
 
-        ooPauseBetweenGamesC = new JComboBox<>(new String[]{"Yes", "No"});
+        oPauseBetweenGamesC = new JComboBox<>(new String[]{"Yes", "No"});
         gbc.gridx = 1;
-        otherOptions.add(ooPauseBetweenGamesC, gbc);
+        options.add(oPauseBetweenGamesC, gbc);
 
-        ooNumOfGamesL = new JLabel("Number of games:");
-        ooNumOfGamesL.setForeground(Color.WHITE);
+        oNumOfGamesL = new JLabel("Number of games:");
+        oNumOfGamesL.setForeground(Color.WHITE);
         gbc.gridx = 0;
         gbc.gridy = 4;
-        otherOptions.add(ooNumOfGamesL, gbc);
+        options.add(oNumOfGamesL, gbc);
 
-        ooNumOfGamesT = new JTextField("" + numOfGames, 5);
+        oNumOfGamesT = new JTextField(String.valueOf(1), 5);
         gbc.gridx = 1;
-        otherOptions.add(ooNumOfGamesT, gbc);
+        options.add(oNumOfGamesT, gbc);
 
         playButton = new JButton("PLAY");
         playButton.setBackground(new Color(102, 255, 255));
@@ -194,7 +193,7 @@ public class SwingGUI {
         gbc.gridy = 5;
         gbc.gridwidth = 2;
         gbc.fill = GridBagConstraints.HORIZONTAL;
-        otherOptions.add(playButton, gbc);
+        options.add(playButton, gbc);
     }
 
     private void setSizeRelatedProperties() {
@@ -331,6 +330,7 @@ public class SwingGUI {
     class playButtonClick implements ActionListener {
         @Override
         public void actionPerformed(ActionEvent e) {
+            // TODO: Check for empty inputs
             boolean res = checkFilesInPlayersFolder();
 
             if (res) {
