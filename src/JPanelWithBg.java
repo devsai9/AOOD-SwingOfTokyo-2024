@@ -8,8 +8,13 @@ public class JPanelWithBg extends JPanel {
 
     private Image bgImg;
 
-    public JPanelWithBg(String fileName) throws IOException {
-        bgImg = ImageIO.read(new File(fileName));
+    public JPanelWithBg(String fileName) {
+        try {
+            bgImg = ImageIO.read(new File(fileName));
+        } catch (IOException e) {
+            System.out.println("Background image not found");
+            System.exit(404);
+        }
     }
 
     public void paintComponent(Graphics g) {

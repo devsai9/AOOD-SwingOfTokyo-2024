@@ -1,10 +1,14 @@
+import org.w3c.dom.ls.LSOutput;
+
 import javax.swing.*;
+import javax.swing.event.ChangeListener;
 import javax.swing.table.DefaultTableCellRenderer;
 import javax.swing.table.DefaultTableModel;
 import java.awt.*;
+import java.awt.event.ActionEvent;
+import java.awt.event.ActionListener;
 import java.awt.event.ComponentAdapter;
 import java.awt.event.ComponentEvent;
-import java.io.IOException;
 
 public class KOT_Swing {
 
@@ -25,19 +29,22 @@ public class KOT_Swing {
     JButton playButton;
 
     JLabel kotLogo;
+
+    JScrollPane tableScrollPane;
     JTable playersTable;
+    String[] columnNames = {"Player ID", "Player Type"};
     Object[][] playersData;
+    DefaultTableModel tableModel;
+    JLabel editInstructionLabel;
 
     static int windowWidth = 950;
     static int windowHeight = 600;
-    final static String pathPrefix = "C:/Users/Sai Chandra/IdeaProjects/AOOD-KOTUI-2024/src/";
+    final static String pathPrefix = "D:/Code_Projects/AOOD-KOTUI-2024/src/";
 
     public KOT_Swing() {
         frame = new JFrame("King of Tokyo GUI");
         frame.addComponentListener(new ComponentAdapter() {
             public void componentResized(ComponentEvent e) {
-                if (frame.getWidth() < 950) frame.setBounds(0, 0, 950, frame.getHeight());
-
                 windowWidth = frame.getWidth();
                 windowHeight = frame.getHeight();
                 setSizeRelatedProperties();
@@ -45,12 +52,9 @@ public class KOT_Swing {
         });
         frame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
         frame.setSize(windowWidth, windowHeight);
+        frame.setMinimumSize(new Dimension(windowWidth, windowHeight));
 
-        try {
-            panel = new JPanelWithBg(pathPrefix + "assets/background.jpeg");
-        } catch (IOException e) {
-            throw new RuntimeException(e);
-        }
+        panel = new JPanelWithBg(pathPrefix + "assets/background.jpeg");
         panel.setBackground(Color.WHITE);
         panel.setLayout(new GridBagLayout());
 
@@ -60,53 +64,59 @@ public class KOT_Swing {
         GridBagConstraints gbc = new GridBagConstraints();
         gbc.gridx = 0;
         gbc.gridy = 0;
-        gbc.anchor = GridBagConstraints.NORTH;
+        gbc.anchor = GridBagConstraints.CENTER;
         gbc.fill = GridBagConstraints.CENTER;
         gbc.weightx = 0.33;
         panel.add(otherOptions, gbc);
 
         kotLogo = new JLabel("KOT Logo");
         gbc.gridx = 1;
-        gbc.weightx = 0.34;
+        gbc.anchor = GridBagConstraints.CENTER;
         gbc.fill = GridBagConstraints.CENTER;
+        gbc.weightx = 0.34;
         panel.add(kotLogo, gbc);
 
         initializePlayersTable();
 
-        JScrollPane scrollPane = new JScrollPane(playersTable);
-        scrollPane.setPreferredSize(new Dimension(windowWidth / 3, calculateTableHeight(playersTable.getRowCount()) + 3));
+        JPanel tablePanel = new JPanel(new BorderLayout());
+
+        tableScrollPane = new JScrollPane(playersTable);
+        tableScrollPane.setPreferredSize(new Dimension(windowWidth / 3, calculateTableHeight(playersTable.getRowCount()) + 3));
+        tablePanel.add(tableScrollPane, BorderLayout.CENTER);
+
+        editInstructionLabel = new JLabel("Double click on player type cell to edit");
+        editInstructionLabel.setFont(new Font("Arial", Font.PLAIN, 14));
+        editInstructionLabel.setHorizontalAlignment(SwingConstants.CENTER);
+        tablePanel.add(editInstructionLabel, BorderLayout.SOUTH);
 
         gbc.gridx = 2;
         gbc.gridy = 0;
-        gbc.weightx = 0.33;
+        gbc.anchor = GridBagConstraints.CENTER;
         gbc.fill = GridBagConstraints.CENTER;
-        panel.add(scrollPane, gbc);
-        setSizeRelatedProperties();
+        gbc.weightx = 0.33;
+        panel.add(tablePanel, gbc);
 
+        setSizeRelatedProperties();
         frame.add(panel);
         frame.setVisible(true);
     }
 
+    // Helper methods
     private void initializePlayersTable() {
-        String[] columnNames = {"Player ID", "Player Type"};
-
         playersData = new Object[][] {
                 {"0", "Player_Naive.java"},
-                {"1", "Player_AI.java"},
-                {"2", "Player_AI.java"},
-                {"3", "Player_Naive.java"},
-                {"4", "Player_Naive.java"},
-                {"5", "Player_Naive.java"}
+                {"1", "Player_AI.java"}
         };
 
-        DefaultTableModel model = new DefaultTableModel(playersData, columnNames) {
+        tableModel = new DefaultTableModel(playersData, columnNames) {
             @Override
             public boolean isCellEditable(int row, int col) {
                 return col == 1;
             }
         };
 
-        playersTable = new JTable(model);
+        playersTable = new JTable(tableModel);
+        playersTable.getTableHeader().setReorderingAllowed(false);
         playersTable.setRowHeight(40);
         playersTable.setFont(new Font("Arial", Font.PLAIN, 16));
         playersTable.getTableHeader().setFont(new Font("Arial", Font.BOLD, 18));
@@ -121,35 +131,48 @@ public class KOT_Swing {
         }
     }
 
-    private int calculateTableHeight(int numberOfRows) {
-        final int rowHeight = 40;
-        final int headerHeight = playersTable.getTableHeader().getPreferredSize().height;
-        return headerHeight + (rowHeight * numberOfRows);
-    }
-
     private void reconfigureTable(int rows) {
-        // TODO: Add row deletion
+        // TODO: Maybe add row deletion
         int currentRows = playersTable.getRowCount();
 
-        Object[][] dataL = new Object[rows][2];
+        Object[][] dataL = new Object[rows][];
 
-        for (int i = 0; i < rows; i++) {
+        for (int i = 0; i < Math.min(rows, currentRows); i++) {
             dataL[i] = playersData[i];
         }
 
         if (rows > currentRows) {
-            for (int i = currentRows - 1; i < rows; i++) {
-                playersData[i] = new Object[]{String.valueOf(i), "Player_Naive.java"};
+            for (int i = currentRows; i < rows; i++) {
+                dataL[i] = new Object[]{String.valueOf(i), "Player_Naive.java"};
             }
         }
 
         playersData = dataL;
+
+        tableModel = new DefaultTableModel(playersData, columnNames) {
+            @Override
+            public boolean isCellEditable(int row, int col) {
+                return col == 1;
+            }
+        };
+
+        playersTable.setModel(tableModel);
+
+        DefaultTableCellRenderer centerRenderer = new DefaultTableCellRenderer();
+        centerRenderer.setHorizontalAlignment(JLabel.CENTER);
+        for (int i = 0; i < playersTable.getColumnCount(); i++) {
+            playersTable.getColumnModel().getColumn(i).setCellRenderer(centerRenderer);
+        }
+
+        tableScrollPane.setPreferredSize(new Dimension(windowWidth / 3, calculateTableHeight(playersTable.getRowCount()) + 3));
+        frame.revalidate();
+        frame.repaint();
     }
 
     private void setSizeRelatedProperties() {
         panel.setBounds(0, 0, windowWidth, windowHeight);
         kotLogo.setText("");
-        kotLogo.setIcon(new ImageIcon(new ImageIcon(pathPrefix + "assets/kingOfTokyoLogo.png").getImage().getScaledInstance(windowWidth / 3, (int) ((windowWidth / 3.0) * (757.0 / 1105.0)), Image.SCALE_SMOOTH)));
+        kotLogo.setIcon(scaleImage("assets/kingOfTokyoLogo.png", windowWidth / 3.0, 1105.0, 757.0));
         frame.revalidate();
         frame.repaint();
     }
@@ -181,6 +204,8 @@ public class KOT_Swing {
 
         ooNumOfPlayersC = new JComboBox<>(new String[]{"2", "3", "4", "5", "6"});
         gbc.gridx = 1;
+        ooNumOfPlayersC.addActionListener(new numOfPlayersComboBoxChange());
+        // ooNumOfPlayersC.setSelectedIndex(4);
         otherOptions.add(ooNumOfPlayersC, gbc);
 
         ooReportResultsL = new JLabel("Report results?");
@@ -224,7 +249,22 @@ public class KOT_Swing {
         otherOptions.add(playButton, gbc);
     }
 
-    public static void main(String[] args) {
-        SwingUtilities.invokeLater(KOT_Swing::new);
+    // Utility methods
+    private int calculateTableHeight(int numberOfRows) {
+        final int rowHeight = 40;
+        final int headerHeight = playersTable.getTableHeader().getPreferredSize().height;
+        return headerHeight + (rowHeight * numberOfRows);
+    }
+
+    private ImageIcon scaleImage(String relPath, double desiredWidth, double imgNativeWidth, double imgNativeHeight) {
+        return  new ImageIcon(new ImageIcon(pathPrefix + relPath).getImage().getScaledInstance((int) desiredWidth, (int) (desiredWidth * (imgNativeHeight / imgNativeWidth)), Image.SCALE_SMOOTH));
+    }
+
+    class numOfPlayersComboBoxChange implements ActionListener {
+        @Override
+        public void actionPerformed(ActionEvent e) {
+            JComboBox src = (JComboBox) e.getSource();
+            reconfigureTable(src.getSelectedIndex() + 2);
+        }
     }
 }
