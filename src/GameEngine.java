@@ -1,30 +1,70 @@
+import javax.swing.SwingWorker;
 import java.util.Arrays;
 import players.*;
 
-@SuppressWarnings("StringTemplateMigration")
 public class GameEngine {
     private State state = new State();
     private Player[] players;
     private boolean[] deadPlayers;
-        
+
     private int playersLeft = 0;
     private int turnsInTokyo = 0;
-    
+    private SwingGUI.Results logger;
+
     // SETTINGS
     int outputting;
     int pausing;
 
-    public GameEngine(int numOfPlayers, int numOfGames, int outputtingInterval, int pausing) {
+    public GameEngine(int numOfPlayers, int numOfGames, int outputtingInterval, int pausing, SwingGUI.Results logger) {
+        this.logger = logger;
+
         players = new Player[numOfPlayers];
         deadPlayers = new boolean[numOfPlayers];
 
         outputting = outputtingInterval;
         this.pausing = pausing;
 
-        runXGames(numOfGames);
+        // Run the game in a SwingWorker
+        new GameWorker(numOfGames).execute();
+    }
+
+    private class GameWorker extends SwingWorker<int[], String> {
+        private int numOfGames;
+
+        public GameWorker(int numOfGames) {
+            this.numOfGames = numOfGames;
+        }
+
+        @Override
+        protected int[] doInBackground() {
+            int[] results;
+
+            results = runXGames(numOfGames);
+
+            return results;
+        }
+
+        @Override
+        protected void process(java.util.List<String> chunks) {
+            for (String message : chunks) {
+                logger.log(message);
+            }
+        }
+
+        @Override
+        protected void done() {
+            try {
+                int[] results = get();
+                for (int j = 0; j < results.length; j++) {
+                    logger.log("Player #" + (j + 1) + " (AI) Won: " + (((double) results[j]) / numOfGames * 100.0) + "% of the time (" + results[j] + "/" + numOfGames + " games).");
+                }
+            } catch (Exception e) {
+                logger.log("Error: " + e.getMessage());
+            }
+        }
     }
     
-    private void runXGames(int numOfGames) {
+    private int[] runXGames(int numOfGames) {
         int[] results = new int[players.length];
 
         for (int ijk = 0; ijk < results.length; ijk++) {
@@ -58,13 +98,16 @@ public class GameEngine {
             int res = runGame(i + 1);
             results[res]++;
 
-            if (pausing <= GAME_INTERVALS.PER_GAME) pause(1000);
+            if (pausing <= GameIntervals.PER_GAME) pause(1000);
         }
 
         // There will always be at least overall status reporting; no check needed
-        for (int j = 0; j < results.length; j++) {
-            System.out.println("Player #" + (j+1) + " (AI) Won: " + (((double) results[j]) / numOfGames * 100.0) + "% of the time (" + results[j] + "/" + numOfGames + " games).");
-        }
+        if (outputting <= GameIntervals.PER_GAME) logger.log("\n");
+//        for (int j = 0; j < results.length; j++) {
+//            logger.log("Player #" + (j+1) + " (AI) Won: " + (((double) results[j]) / numOfGames * 100.0) + "% of the time (" + results[j] + "/" + numOfGames + " games).");
+//        }
+
+        return results;
     }
 
     private void setFameHelper(int player, int deltaFame) {
@@ -138,9 +181,9 @@ public class GameEngine {
             // For each player...
             if (state.getPlayerHealths()[state.getCurrentPlayer()] == 0) {
                 // Player is dead
-                if (pausing == GAME_INTERVALS.PER_TURN) pause(500);
-                if (outputting == GAME_INTERVALS.PER_TURN) {
-                    System.out.println("\n———————New Turn———————\n \nPlayer #" + (state.getCurrentPlayer() + 1) + ": Dead");
+                if (pausing == GameIntervals.PER_TURN) pause(500);
+                if (outputting == GameIntervals.PER_TURN) {
+                    logger.log("———————New Turn———————\n \nPlayer #" + (state.getCurrentPlayer() + 1) + ": Dead");
                 }
                 
                 // Increasing the health of the person who killed it
@@ -178,10 +221,10 @@ public class GameEngine {
                 }
 
                 // Only prints the data and roll if the player is still alive
-                if (pausing == GAME_INTERVALS.PER_TURN) pause(500);
-                if (outputting == GAME_INTERVALS.PER_TURN) System.out.println("\n———————New Turn———————\n \nPlayer #" + (state.getCurrentPlayer() + 1) + ": \nHealth: " + state.getPlayerHealths()[state.getCurrentPlayer()] + "\nFame: " + state.getPlayerFames()[state.getCurrentPlayer()]);
+                if (pausing == GameIntervals.PER_TURN) pause(500);
+                if (outputting == GameIntervals.PER_TURN) logger.log("———————New Turn———————\n \nPlayer #" + (state.getCurrentPlayer() + 1) + ": \nHealth: " + state.getPlayerHealths()[state.getCurrentPlayer()] + "\nFame: " + state.getPlayerFames()[state.getCurrentPlayer()]);
                 
-                if (numHavePlayed != 0 && outputting == GAME_INTERVALS.PER_TURN) System.out.println("Player #" + (state.getInTokyo() + 1) + " is in Tokyo");
+                if (numHavePlayed != 0 && outputting == GameIntervals.PER_TURN) logger.log("Player #" + (state.getInTokyo() + 1) + " is in Tokyo");
 
                 // Checking to see if player wants to leave tokyo
                 if (state.getCurrentPlayer() == state.getInTokyo() && players[state.getCurrentPlayer()].leaveTokyo(state.getCurrentTurn(), state.getCurrentPlayer(), state.getInTokyo(), state.getDice(), state.getPlayerHealths(), state.getPlayerFames())) {
@@ -223,13 +266,14 @@ public class GameEngine {
                     setFameHelper(state.getCurrentPlayer(), 1);
                 }
 
-                if (outputting == GAME_INTERVALS.PER_TURN) {
-                    System.out.print("Final dice roll: ");
+                if (outputting == GameIntervals.PER_TURN) {
+                    StringBuilder temp = new StringBuilder("Final dice roll: ");
 
                     for (int finalDiceRoll1 : userDiceRoll) {
-                        System.out.print(finalDiceRoll1 + " ");
+                        temp.append(finalDiceRoll1).append(" ");
                     }
-                    System.out.println();
+
+                    logger.log(temp.toString());
                 }
                 
                 // Increasing the current turn
@@ -247,12 +291,14 @@ public class GameEngine {
 
                     userDiceRoll = rollDice(userDiceRoll);
                     processDice(userDiceRoll);
-                    if (outputting == GAME_INTERVALS.PER_TURN) {
-                        System.out.print("Second final dice roll: ");
+                    if (outputting == GameIntervals.PER_TURN) {
+                        StringBuilder temp = new StringBuilder("Second final dice roll: ");
+
                         for (int finalDiceRollTwo : userDiceRoll) {
-                            System.out.print(finalDiceRollTwo + " ");
+                            temp.append(finalDiceRollTwo).append(" ");
                         }
-                        System.out.println();
+
+                        logger.log(temp.toString());
                     }
                 }
             }
@@ -267,14 +313,14 @@ public class GameEngine {
         if (playersLeft == 1) {
             for (int j = 0; j < state.getPlayerHealths().length; j++) {
                 if (state.getPlayerHealths()[j] != 0) {
-                    if (outputting <= GAME_INTERVALS.PER_GAME) System.out.println("Round #" + round + ": Player #" + (j + 1) + " has won!");
+                    if (outputting <= GameIntervals.PER_GAME) logger.log((outputting == GameIntervals.PER_TURN ? "\n" : "") + "Round #" + round + ": Player #" + (j + 1) + " has won!");
                     return j;
                 }
             }
         } else {
             for (int index = 0; index < state.getPlayerFames().length; index++) {
                 if (state.getPlayerFames()[index] == 20) {
-                    if (outputting <= GAME_INTERVALS.PER_GAME) System.out.println("Round #" + round + ": Player #" + (index + 1) + " has won!");
+                    if (outputting <= GameIntervals.PER_GAME) logger.log((outputting == GameIntervals.PER_TURN ? "\n" : "") + "Round #" + round + ": Player #" + (index + 1) + " has won!");
                     return index;
                 }
             }

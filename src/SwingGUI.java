@@ -14,12 +14,15 @@ import java.io.File;
 // TODO: Make the Other Options Panel have a border radius
 // TODO: Make the Players Table have a border radius
 // TODO: Fix Players Table Resizing weirdness
+// TODO: Add picture as the face for the Play button
 
 @SuppressWarnings("StringTemplateMigration")
 public class SwingGUI {
 
     JFrame frame;
     Timer resizeTimer;
+
+    static JPanel mainPanel = new JPanel(new CardLayout());
 
     // Main Window
     JPanelWithBg panel;
@@ -45,8 +48,8 @@ public class SwingGUI {
     DefaultTableModel tableModel;
     JTextArea editInstructionLabel;
 
-    // Play Window
-    // TODO: Implement
+    // Results Window
+    static JPanelWithBg resPanel;
 
     static int windowWidth = 950;
     static int windowHeight = 600;
@@ -74,6 +77,7 @@ public class SwingGUI {
         frame.setSize(windowWidth, windowHeight);
         frame.setMinimumSize(new Dimension(windowWidth, windowHeight));
 
+        resPanel = new JPanelWithBg(pathPrefix + "assets/background.jpeg");
         panel = new JPanelWithBg(pathPrefix + "assets/background.jpeg");
         panel.setBackground(Color.WHITE);
         panel.setLayout(new GridBagLayout());
@@ -118,7 +122,14 @@ public class SwingGUI {
         panel.add(tablePanel, gbc);
 
         setSizeRelatedProperties();
-        frame.add(panel);
+
+        mainPanel.add("Main", panel);
+        mainPanel.add("Results", resPanel);
+
+        CardLayout cl = (CardLayout) (mainPanel.getLayout());
+        cl.show(mainPanel, "Main");
+
+        frame.add(mainPanel);
         frame.setVisible(true);
     }
 
@@ -151,7 +162,6 @@ public class SwingGUI {
         oNumOfPlayersC = new JComboBox<>(new String[]{"2", "3", "4", "5", "6"});
         gbc.gridx = 1;
         oNumOfPlayersC.addActionListener(new numOfPlayersComboBoxChange());
-        // oNumOfPlayersC.setSelectedIndex(4);
         options.add(oNumOfPlayersC, gbc);
 
         oReportResultsL = new JLabel("Report results?");
@@ -363,8 +373,83 @@ public class SwingGUI {
                 int numOfPlayers = oNumOfPlayersC.getSelectedIndex() + 2;
                 int reportResults = oReportResultsC.getSelectedIndex();
                 int pausing = oPauseBetweenGamesC.getSelectedIndex();
-                GameEngine g = new GameEngine(numOfPlayers, numOfGames, reportResults, pausing);
+
+                Results r = new Results();
+
+                GameEngine g = new GameEngine(numOfPlayers, numOfGames, reportResults, pausing, r);
             }
+        }
+    }
+
+    // Results Window
+    static class Results {
+        private JTextArea resultsText;
+        String logged = "";
+
+        public Results() {
+            resPanel.setLayout(new GridBagLayout());
+
+            JPanel titleWrapper = new JPanel();
+            titleWrapper.setOpaque(false);
+            titleWrapper.setLayout(new BorderLayout());
+            titleWrapper.setBorder(BorderFactory.createEmptyBorder(20, 0, 20, 0));
+
+            JLabel titleLabel = new JLabel("King of Tokyo", SwingConstants.CENTER);
+            titleLabel.setFont(new Font("SansSerif", Font.BOLD, 40));
+            titleLabel.setForeground(Color.WHITE);
+            titleWrapper.add(titleLabel, BorderLayout.CENTER);
+
+            JPanel centerWrapperPanel = new JPanel(new FlowLayout(FlowLayout.CENTER, 0, 0));
+            centerWrapperPanel.setOpaque(false);
+
+            JPanel resultsPanel = new JPanel();
+            resultsPanel.setBackground(new Color(40, 100, 200));
+            resultsPanel.setLayout(new BoxLayout(resultsPanel, BoxLayout.Y_AXIS));
+            resultsPanel.setPreferredSize(new Dimension(400, 400));
+
+            JLabel resultsLabel = new JLabel("Results & Reporting");
+            resultsLabel.setFont(new Font("SansSerif", Font.BOLD, 20));
+            resultsLabel.setForeground(Color.WHITE);
+            resultsLabel.setAlignmentX(Component.CENTER_ALIGNMENT);
+            resultsPanel.add(resultsLabel);
+
+            resultsText = new JTextArea();
+            resultsText.setText("Waiting for output from game...");
+
+            resultsText.setFont(new Font("SansSerif", Font.PLAIN, 14));
+            resultsText.setForeground(Color.WHITE);
+            resultsText.setBackground(new Color(40, 100, 200)); // Matching background
+            resultsText.setEditable(false);
+
+            resultsText.setBorder(BorderFactory.createEmptyBorder(10, 10, 10, 10));
+
+            JScrollPane scrollPane = new JScrollPane(resultsText);
+            scrollPane.setBorder(BorderFactory.createEmptyBorder());
+
+            resultsPanel.add(Box.createRigidArea(new Dimension(0, 10)));
+            resultsPanel.add(scrollPane);
+
+            centerWrapperPanel.add(resultsPanel);
+
+            GridBagConstraints gbc = new GridBagConstraints();
+            gbc.gridx = 0;
+            gbc.gridy = 0;
+            gbc.anchor = GridBagConstraints.NORTH;
+            resPanel.add(titleWrapper, gbc);
+
+            gbc.gridy = 1;
+            gbc.anchor = GridBagConstraints.CENTER;
+            gbc.weighty = 1;
+            resPanel.add(centerWrapperPanel, gbc);
+
+            CardLayout cl = (CardLayout) (mainPanel.getLayout());
+            cl.show(mainPanel, "Results");
+        }
+
+        public void log(String s) {
+            logged += s + "\n";
+            resultsText.setText(logged);
+            resultsText.setCaretPosition(resultsText.getDocument().getLength());
         }
     }
 }
