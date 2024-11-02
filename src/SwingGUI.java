@@ -6,14 +6,20 @@ import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
 import java.awt.event.ComponentAdapter;
 import java.awt.event.ComponentEvent;
+import java.io.File;
 
 // TODO: Maybe add row deletion
 // TODO: Make the Other Options Panel have a border radius
 // TODO: Make the Players Table have a border radius
+// TODO: Fix Players Table Resizing weirdness
 
-public class KOT_Swing {
+@SuppressWarnings("StringTemplateMigration")
+public class SwingGUI {
 
     JFrame frame;
+    Timer resizeTimer;
+
+    // Main Window
     JPanelWithBg panel;
 
     JPanel otherOptions;
@@ -36,19 +42,31 @@ public class KOT_Swing {
     String[] columnNames = {"Player ID", "Player Type"};
     Object[][] playersData;
     DefaultTableModel tableModel;
-    JLabel editInstructionLabel;
+    JTextArea editInstructionLabel;
+
+    // Play Window
+    // TODO: Implement
 
     static int windowWidth = 950;
     static int windowHeight = 600;
     final static String pathPrefix = "D:/Code_Projects/AOOD-KOTUI-2024/src/";
 
-    public KOT_Swing() {
+    public SwingGUI() {
         frame = new JFrame("King of Tokyo GUI");
         frame.addComponentListener(new ComponentAdapter() {
             public void componentResized(ComponentEvent e) {
-                windowWidth = frame.getWidth();
-                windowHeight = frame.getHeight();
-                setSizeRelatedProperties();
+                if (resizeTimer != null && resizeTimer.isRunning()) {
+                    resizeTimer.restart();
+                } else {
+                    resizeTimer = new Timer(200, e2 -> {
+                        windowWidth = frame.getWidth();
+                        windowHeight = frame.getHeight();
+                        setSizeRelatedProperties();
+                        resizeTimer.stop();
+                    });
+                    resizeTimer.setRepeats(false);
+                    resizeTimer.start();
+                }
             }
         });
         frame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
@@ -85,9 +103,10 @@ public class KOT_Swing {
         tableScrollPane.setPreferredSize(new Dimension(windowWidth / 3, calculateTableHeight(playersTable.getRowCount()) + 3));
         tablePanel.add(tableScrollPane, BorderLayout.CENTER);
 
-        editInstructionLabel = new JLabel("Double click on player type cell to edit");
+        editInstructionLabel = new JTextArea("Double click on player type cell to edit\nEnter the name of the desired Java file without the \".java\"");
         editInstructionLabel.setFont(new Font("Arial", Font.PLAIN, 14));
-        editInstructionLabel.setHorizontalAlignment(SwingConstants.CENTER);
+        editInstructionLabel.setEditable(false);
+        editInstructionLabel.setLineWrap(true);
         tablePanel.add(editInstructionLabel, BorderLayout.SOUTH);
 
         gbc.gridx = 2;
@@ -103,80 +122,6 @@ public class KOT_Swing {
     }
 
     // Helper methods
-    private void initializePlayersTable() {
-        playersData = new Object[][] {
-                {"0", "Player_Naive.java"},
-                {"1", "Player_AI.java"}
-        };
-
-        tableModel = new DefaultTableModel(playersData, columnNames) {
-            @Override
-            public boolean isCellEditable(int row, int col) {
-                return col == 1;
-            }
-        };
-
-        playersTable = new JTable(tableModel);
-        playersTable.getTableHeader().setReorderingAllowed(false);
-        playersTable.setRowHeight(40);
-        playersTable.setFont(new Font("Arial", Font.PLAIN, 16));
-        playersTable.getTableHeader().setFont(new Font("Arial", Font.BOLD, 18));
-        playersTable.getTableHeader().setBackground(new Color(0, 0, 0));
-        playersTable.getTableHeader().setForeground(Color.WHITE);
-        playersTable.setGridColor(Color.BLACK);
-
-        DefaultTableCellRenderer centerRenderer = new DefaultTableCellRenderer();
-        centerRenderer.setHorizontalAlignment(JLabel.CENTER);
-        for (int i = 0; i < playersTable.getColumnCount(); i++) {
-            playersTable.getColumnModel().getColumn(i).setCellRenderer(centerRenderer);
-        }
-    }
-
-    private void reconfigureTable(int rows) {
-        int currentRows = playersTable.getRowCount();
-
-        Object[][] dataL = new Object[rows][];
-
-        for (int i = 0; i < Math.min(rows, currentRows); i++) {
-            dataL[i] = playersData[i];
-        }
-
-        if (rows > currentRows) {
-            for (int i = currentRows; i < rows; i++) {
-                dataL[i] = new Object[]{String.valueOf(i), "Player_Naive.java"};
-            }
-        }
-
-        playersData = dataL;
-
-        tableModel = new DefaultTableModel(playersData, columnNames) {
-            @Override
-            public boolean isCellEditable(int row, int col) {
-                return col == 1;
-            }
-        };
-
-        playersTable.setModel(tableModel);
-
-        DefaultTableCellRenderer centerRenderer = new DefaultTableCellRenderer();
-        centerRenderer.setHorizontalAlignment(JLabel.CENTER);
-        for (int i = 0; i < playersTable.getColumnCount(); i++) {
-            playersTable.getColumnModel().getColumn(i).setCellRenderer(centerRenderer);
-        }
-
-        tableScrollPane.setPreferredSize(new Dimension(windowWidth / 3, calculateTableHeight(playersTable.getRowCount()) + 3));
-        frame.revalidate();
-        frame.repaint();
-    }
-
-    private void setSizeRelatedProperties() {
-        panel.setBounds(0, 0, windowWidth, windowHeight);
-        kotLogo.setText("");
-        kotLogo.setIcon(scaleImage("assets/kingOfTokyoLogo.png", windowWidth / 3.0, 1105.0, 757.0));
-        frame.revalidate();
-        frame.repaint();
-    }
-
     private void initializeOtherOptions() {
         otherOptions.setLayout(new GridBagLayout());
         otherOptions.setBackground(new Color(0, 51, 153));
@@ -242,11 +187,103 @@ public class KOT_Swing {
         playButton.setBackground(new Color(102, 255, 255));
         playButton.setFont(new Font("Arial", Font.BOLD, 16));
         playButton.setBorder(BorderFactory.createEmptyBorder(10, 10, 10, 10));
+        playButton.addActionListener(new playButtonClick());
         gbc.gridx = 0;
         gbc.gridy = 5;
         gbc.gridwidth = 2;
         gbc.fill = GridBagConstraints.HORIZONTAL;
         otherOptions.add(playButton, gbc);
+    }
+
+    private void setSizeRelatedProperties() {
+        panel.setBounds(0, 0, windowWidth, windowHeight);
+        kotLogo.setText("");
+        kotLogo.setIcon(scaleImage("assets/kingOfTokyoLogo.png", windowWidth / 3.0, 1105.0, 757.0));
+        frame.revalidate();
+        frame.repaint();
+    }
+
+    private void initializePlayersTable() {
+        playersData = new Object[][] {
+                {"0", "PlayerNaive"},
+                {"1", "PlayerAI_GeeterPriffin"}
+        };
+
+        tableModel = new DefaultTableModel(playersData, columnNames) {
+            @Override
+            public boolean isCellEditable(int row, int col) {
+                return col == 1;
+            }
+        };
+
+        playersTable = new JTable(tableModel);
+        playersTable.getTableHeader().setReorderingAllowed(false);
+        playersTable.setRowHeight(40);
+        playersTable.setFont(new Font("Arial", Font.PLAIN, 16));
+        playersTable.getTableHeader().setFont(new Font("Arial", Font.BOLD, 18));
+        playersTable.getTableHeader().setBackground(new Color(0, 0, 0));
+        playersTable.getTableHeader().setForeground(Color.WHITE);
+        playersTable.setGridColor(Color.BLACK);
+
+        DefaultTableCellRenderer centerRenderer = new DefaultTableCellRenderer();
+        centerRenderer.setHorizontalAlignment(JLabel.CENTER);
+        for (int i = 0; i < playersTable.getColumnCount(); i++) {
+            playersTable.getColumnModel().getColumn(i).setCellRenderer(centerRenderer);
+        }
+    }
+
+    private void reconfigureTable(int rows) {
+        int currentRows = playersTable.getRowCount();
+
+        Object[][] dataL = new Object[rows][];
+
+        for (int i = 0; i < Math.min(rows, currentRows); i++) {
+            dataL[i] = playersData[i];
+        }
+
+        if (rows > currentRows) {
+            for (int i = currentRows; i < rows; i++) {
+                dataL[i] = new Object[]{String.valueOf(i), "PlayerNaive"};
+            }
+        }
+
+        playersData = dataL;
+
+        tableModel = new DefaultTableModel(playersData, columnNames) {
+            @Override
+            public boolean isCellEditable(int row, int col) {
+                return col == 1;
+            }
+        };
+
+        playersTable.setModel(tableModel);
+
+        DefaultTableCellRenderer centerRenderer = new DefaultTableCellRenderer();
+        centerRenderer.setHorizontalAlignment(JLabel.CENTER);
+        for (int i = 0; i < playersTable.getColumnCount(); i++) {
+            playersTable.getColumnModel().getColumn(i).setCellRenderer(centerRenderer);
+        }
+
+        tableScrollPane.setPreferredSize(new Dimension(windowWidth / 3, calculateTableHeight(playersTable.getRowCount()) + 3));
+        frame.revalidate();
+        frame.repaint();
+    }
+
+    private boolean checkFilesInPlayersFolder() {
+        String playersFolderPath = pathPrefix + "/players/";
+
+        for (int i = 0; i < playersTable.getRowCount(); i++) {
+            String fileName = playersTable.getValueAt(i, 1) + ".java";
+            File file = new File(playersFolderPath + fileName);
+
+            if (!file.exists() || file.isDirectory()) {
+                System.out.println("File not found: " + fileName);
+                JOptionPane.showMessageDialog(frame, "File not found: " + fileName, "Error", JOptionPane.ERROR_MESSAGE);
+                return false;
+            }
+        }
+
+        return true;
     }
 
     // Utility methods
@@ -260,11 +297,23 @@ public class KOT_Swing {
         return  new ImageIcon(new ImageIcon(pathPrefix + relPath).getImage().getScaledInstance((int) desiredWidth, (int) (desiredWidth * (imgNativeHeight / imgNativeWidth)), Image.SCALE_SMOOTH));
     }
 
+    // Event Listener classes
     class numOfPlayersComboBoxChange implements ActionListener {
         @Override
         public void actionPerformed(ActionEvent e) {
             JComboBox src = (JComboBox) e.getSource();
             reconfigureTable(src.getSelectedIndex() + 2);
+        }
+    }
+
+    class playButtonClick implements ActionListener {
+        @Override
+        public void actionPerformed(ActionEvent e) {
+            boolean res = checkFilesInPlayersFolder();
+
+            if (res) {
+                // TODO: Implement
+            }
         }
     }
 }

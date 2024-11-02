@@ -3,7 +3,7 @@ public class Main {
         // GameEngine ge = new GameEngine();
         javax.swing.SwingUtilities.invokeLater(new Runnable() {
             public void run() {
-                KOT_Swing k = new KOT_Swing();
+                SwingGUI k = new SwingGUI();
             }
         });
     }
