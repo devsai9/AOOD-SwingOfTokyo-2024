@@ -276,6 +276,11 @@ public class SwingGUI {
             String fileName = playersTable.getValueAt(i, 1) + ".java";
             File file = new File(playersFolderPath + fileName);
 
+            if (fileName.equalsIgnoreCase("player.java")) {
+                JOptionPane.showMessageDialog(frame, "Can not play with Player.java", "Error", JOptionPane.ERROR_MESSAGE);
+                return false;
+            }
+
             if (!file.exists() || file.isDirectory()) {
                 System.out.println("File not found: " + fileName);
                 JOptionPane.showMessageDialog(frame, "File not found: " + fileName, "Error", JOptionPane.ERROR_MESSAGE);
