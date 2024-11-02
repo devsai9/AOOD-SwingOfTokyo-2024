@@ -1,7 +1,4 @@
-import org.w3c.dom.ls.LSOutput;
-
 import javax.swing.*;
-import javax.swing.event.ChangeListener;
 import javax.swing.table.DefaultTableCellRenderer;
 import javax.swing.table.DefaultTableModel;
 import java.awt.*;
@@ -9,6 +6,10 @@ import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
 import java.awt.event.ComponentAdapter;
 import java.awt.event.ComponentEvent;
+
+// TODO: Maybe add row deletion
+// TODO: Make the Other Options Panel have a border radius
+// TODO: Make the Players Table have a border radius
 
 public class KOT_Swing {
 
@@ -132,7 +133,6 @@ public class KOT_Swing {
     }
 
     private void reconfigureTable(int rows) {
-        // TODO: Maybe add row deletion
         int currentRows = playersTable.getRowCount();
 
         Object[][] dataL = new Object[rows][];
