@@ -1,72 +1,43 @@
 import java.util.Arrays;
 import players.*;
 
+@SuppressWarnings("StringTemplateMigration")
 public class GameEngine {
     private State state = new State();
-    private Player[] players = new Player[3];
-    private boolean[] deadPlayers = new boolean[8];
+    private Player[] players;
+    private boolean[] deadPlayers;
         
     private int playersLeft = 0;
     private int turnsInTokyo = 0;
     
     // SETTINGS
-    boolean outputting = false;
-    boolean pausing = false;
-    boolean oneGame = false;
-    
+    int outputting;
+    int pausing;
 
-    public GameEngine() {
-        if (!oneGame) {
-            run1000Games();
-            return;
-        }
-        
-        state.setInTokyo(-1);
+    public GameEngine(int numOfPlayers, int numOfGames, int outputtingInterval, int pausing) {
+        players = new Player[numOfPlayers];
+        deadPlayers = new boolean[numOfPlayers];
 
-        players[0] = new PlayerAI_GeeterPriffin();
-        players[1] = new PlayerNaive();
-        players[2] = new PlayerNaive();
+        outputting = outputtingInterval;
+        this.pausing = pausing;
 
-        deadPlayers = new boolean[players.length];
-        
-        for (int j = 0; j < players.length; j++) {
-            players[j].setId(j);
-            deadPlayers[j] = false;
-        }
-        
-        playersLeft = players.length;
-        
-        
-        int[] tempH = new int[players.length];
-        int[] tempF = new int[players.length];
-        for (int h = 0; h < players.length; h++) {
-            tempH[h] = 10;
-            tempF[h] = 0;
-        }
-        
-        state.setPlayerHealths(tempH);
-        state.setPlayerFames(tempF);
-
-        state.setCurrentPlayer((int) Math.floor(Math.random() * players.length));
+        runXGames(numOfGames);
     }
     
-    private void run1000Games() {
+    private void runXGames(int numOfGames) {
         int[] results = new int[players.length];
+
         for (int ijk = 0; ijk < results.length; ijk++) {
             results[ijk] = 0;
         }
         
-        
-        for (int i = 0; i < 1000; i++) {
+        for (int i = 0; i < numOfGames; i++) {
             state.setInTokyo(-1);
-
-            players[0] = new PlayerAI_GeeterPriffin();
-            players[1] = new PlayerNaive();
-            players[2] = new PlayerNaive();
 
             deadPlayers = new boolean[players.length];
             
             for (int j = 0; j < players.length; j++) {
+                players[j] = new PlayerNaive();
                 players[j].setId(j);
                 deadPlayers[j] = false;
             }
@@ -84,12 +55,15 @@ public class GameEngine {
             state.setPlayerFames(tempF);
     
             state.setCurrentPlayer((int) Math.floor(Math.random() * players.length));
-            int res = runGame();
+            int res = runGame(i + 1);
             results[res]++;
+
+            if (pausing <= GAME_INTERVALS.PER_GAME) pause(1000);
         }
-        
+
+        // There will always be at least overall status reporting; no check needed
         for (int j = 0; j < results.length; j++) {
-            System.out.println("Player #" + (j+1) + " (AI) Won: " + (((double) results[j]) / 1000.0 * 100.0) + "% of the time.");
+            System.out.println("Player #" + (j+1) + " (AI) Won: " + (((double) results[j]) / numOfGames * 100.0) + "% of the time (" + results[j] + "/" + numOfGames + " games).");
         }
     }
 
@@ -141,13 +115,9 @@ public class GameEngine {
         setFameHelper(state.getCurrentPlayer(), 1);
     }
 
-    private void pause(int a){
+    private void pause(int a) {
         try {
-            if (!pausing) {
-                Thread.sleep(0);
-            } else {
-                Thread.sleep(a);
-            }
+            Thread.sleep(a);
         }
         catch (Exception e) {}
     }
@@ -161,22 +131,26 @@ public class GameEngine {
         return false;
     }
 
-    private int runGame() {
+    private int runGame(int round) {
         // Start of game
         int numHavePlayed = 0;
         while (playersLeft > 1 && !contains(20, state.getPlayerFames())) {
             // For each player...
             if (state.getPlayerHealths()[state.getCurrentPlayer()] == 0) {
                 // Player is dead
-                pause(500);
-                if (outputting) {
+                if (pausing == GAME_INTERVALS.PER_TURN) pause(500);
+                if (outputting == GAME_INTERVALS.PER_TURN) {
                     System.out.println("\n———————New Turn———————\n \nPlayer #" + (state.getCurrentPlayer() + 1) + ": Dead");
                 }
                 
                 // Increasing the health of the person who killed it
                 if (deadPlayers[state.getCurrentPlayer()] == false) {
                     if (state.getCurrentPlayer() == 0) {
-                        setFameHelper(2, 1);
+                        for (int i = players.length - 1; i >= 0; i--) {
+                            if (!deadPlayers[i]) {
+                                setFameHelper(players.length - 1, 1);
+                            }
+                        }
                     } else {
                         setFameHelper(state.getCurrentPlayer() - 1, 1);
                     }
@@ -204,10 +178,10 @@ public class GameEngine {
                 }
 
                 // Only prints the data and roll if the player is still alive
-                pause(500);
-                if (outputting) System.out.println("\n———————New Turn———————\n \nPlayer #" + (state.getCurrentPlayer() + 1) + ": \nHealth: " + state.getPlayerHealths()[state.getCurrentPlayer()] + "\nFame: " + state.getPlayerFames()[state.getCurrentPlayer()]);
+                if (pausing == GAME_INTERVALS.PER_TURN) pause(500);
+                if (outputting == GAME_INTERVALS.PER_TURN) System.out.println("\n———————New Turn———————\n \nPlayer #" + (state.getCurrentPlayer() + 1) + ": \nHealth: " + state.getPlayerHealths()[state.getCurrentPlayer()] + "\nFame: " + state.getPlayerFames()[state.getCurrentPlayer()]);
                 
-                if (numHavePlayed != 0 && outputting) System.out.println("Player #" + (state.getInTokyo() + 1) + " is in Tokyo");
+                if (numHavePlayed != 0 && outputting == GAME_INTERVALS.PER_TURN) System.out.println("Player #" + (state.getInTokyo() + 1) + " is in Tokyo");
 
                 // Checking to see if player wants to leave tokyo
                 if (state.getCurrentPlayer() == state.getInTokyo() && players[state.getCurrentPlayer()].leaveTokyo(state.getCurrentTurn(), state.getCurrentPlayer(), state.getInTokyo(), state.getDice(), state.getPlayerHealths(), state.getPlayerFames())) {
@@ -217,7 +191,13 @@ public class GameEngine {
                     boolean temp_valid = false;
                     while (!temp_valid) {
                         state.setInTokyo(state.getInTokyo() - 1);
-                        if (state.getInTokyo() == -1) state.setInTokyo(2);
+                        if (state.getInTokyo() == -1) {
+                            for (int i = players.length - 1; i >= 0; i--) {
+                                if (!deadPlayers[i]) {
+                                    state.setInTokyo(players.length - 1);
+                                }
+                            }
+                        }
                         if (state.getPlayerHealths()[state.getInTokyo()] != 0) temp_valid = true;
                     }
 
@@ -243,7 +223,7 @@ public class GameEngine {
                     setFameHelper(state.getCurrentPlayer(), 1);
                 }
 
-                if (outputting) {
+                if (outputting == GAME_INTERVALS.PER_TURN) {
                     System.out.print("Final dice roll: ");
 
                     for (int finalDiceRoll1 : userDiceRoll) {
@@ -259,7 +239,7 @@ public class GameEngine {
                 
                 if (extraTurn) {
                     // Increasing the current turn
-                    state.setCurrentTurn(state.getCurrentTurn() + 1);
+                    // state.setCurrentTurn(state.getCurrentTurn() + 1);
                     
                     for (int i = 0; i < userDiceRoll.length; i++) {
                         userDiceRoll[i] = ((int) Math.floor(Math.random() * 6)) + 1;
@@ -267,7 +247,7 @@ public class GameEngine {
 
                     userDiceRoll = rollDice(userDiceRoll);
                     processDice(userDiceRoll);
-                    if (outputting) {
+                    if (outputting == GAME_INTERVALS.PER_TURN) {
                         System.out.print("Second final dice roll: ");
                         for (int finalDiceRollTwo : userDiceRoll) {
                             System.out.print(finalDiceRollTwo + " ");
@@ -287,20 +267,20 @@ public class GameEngine {
         if (playersLeft == 1) {
             for (int j = 0; j < state.getPlayerHealths().length; j++) {
                 if (state.getPlayerHealths()[j] != 0) {
-                    if (outputting) System.out.println("Player #" + (j + 1) + " has won!");
+                    if (outputting <= GAME_INTERVALS.PER_GAME) System.out.println("Round #" + round + ": Player #" + (j + 1) + " has won!");
                     return j;
                 }
             }
         } else {
             for (int index = 0; index < state.getPlayerFames().length; index++) {
                 if (state.getPlayerFames()[index] == 20) {
-                    if (outputting) System.out.println("Player #" + (index+1) + " has won!");
+                    if (outputting <= GAME_INTERVALS.PER_GAME) System.out.println("Round #" + round + ": Player #" + (index + 1) + " has won!");
                     return index;
                 }
             }
         }
         
-        return 0;
+        return -1;
     }
 
     // runGame() abstractions
@@ -344,11 +324,11 @@ public class GameEngine {
                     // Death of player in Tokyo is already checked for
                     setHealthHelper(state.getInTokyo(), -1);
                     if (state.getInTokyo() >= 0 && state.getPlayerHealths()[state.getInTokyo()] != 0) {
-                        
+
                         int[] abc = new int[2];
                         abc[0] = state.getCurrentPlayer();
                         abc[1] = state.getInTokyo();
-                        
+
                         state.setCurrentPlayer(abc[1]);
                         // Prompt currentPlayer if they would like to leave Tokyo
 //                        if (players[state.getInTokyo()] instanceof PlayerHuman && outputting) {
@@ -396,5 +376,4 @@ public class GameEngine {
         // if (numOfDice[3] >= 3) return true | else return false;
         return numOfDice[3] >= 3;
     }
-    
 }

@@ -79,7 +79,7 @@ public class SwingGUI {
         panel.setLayout(new GridBagLayout());
 
         options = new JPanel();
-        initializeOptions();
+        initializeOptionsPanel();
 
         GridBagConstraints gbc = new GridBagConstraints();
         gbc.gridx = 0;
@@ -123,7 +123,7 @@ public class SwingGUI {
     }
 
     // Helper methods
-    private void initializeOptions() {
+    private void initializeOptionsPanel() {
         options.setLayout(new GridBagLayout());
         options.setBackground(new Color(0, 51, 153));
         options.setBorder(BorderFactory.createEmptyBorder(20, 20, 20, 20));
@@ -160,17 +160,18 @@ public class SwingGUI {
         gbc.gridy = 2;
         options.add(oReportResultsL, gbc);
 
-        oReportResultsC = new JComboBox<>(new String[]{"Per game", "Overall"});
+        oReportResultsC = new JComboBox<>(new String[]{"Per Turn", "Per Game", "Overall"});
+        oReportResultsC.setSelectedIndex(1);
         gbc.gridx = 1;
         options.add(oReportResultsC, gbc);
 
-        oPauseBetweenGamesL = new JLabel("Pause between games?");
+        oPauseBetweenGamesL = new JLabel("Pause between...");
         oPauseBetweenGamesL.setForeground(Color.WHITE);
         gbc.gridx = 0;
         gbc.gridy = 3;
         options.add(oPauseBetweenGamesL, gbc);
 
-        oPauseBetweenGamesC = new JComboBox<>(new String[]{"Yes", "No"});
+        oPauseBetweenGamesC = new JComboBox<>(new String[]{"turns", "games", "never"});
         gbc.gridx = 1;
         options.add(oPauseBetweenGamesC, gbc);
 
@@ -330,11 +331,39 @@ public class SwingGUI {
     class playButtonClick implements ActionListener {
         @Override
         public void actionPerformed(ActionEvent e) {
-            // TODO: Check for empty inputs
+            String numOfGamesS = oNumOfGamesT.getText();
+            int numOfGames;
+
+            if (numOfGamesS.isBlank()) {
+                JOptionPane.showMessageDialog(frame, "Please enter the number of games", "Incomplete field", JOptionPane.WARNING_MESSAGE);
+                return;
+            }
+
+            try {
+                numOfGames = Integer.parseInt(numOfGamesS);
+            } catch (NumberFormatException ex) {
+                JOptionPane.showMessageDialog(frame, "Invalid number of games. Please enter a positive integer", "Error", JOptionPane.ERROR_MESSAGE);
+                return;
+            }
+
+            if (numOfGames <= 0) {
+                JOptionPane.showMessageDialog(frame, "Please enter a positive number.", "Error", JOptionPane.ERROR_MESSAGE);
+                return;
+            } else if (numOfGames >= 100000) {
+                int userResponse = JOptionPane.showConfirmDialog(frame, "That's a lot of games. Are you sure you want many?");
+                if (userResponse == JOptionPane.NO_OPTION || userResponse == JOptionPane.CLOSED_OPTION || userResponse == JOptionPane.CANCEL_OPTION) {
+                    JOptionPane.showMessageDialog(frame, "Operation cancelled; no games were started.", "Operation Cancelled", JOptionPane.INFORMATION_MESSAGE);
+                    return;
+                }
+            }
+
             boolean res = checkFilesInPlayersFolder();
 
             if (res) {
-                // TODO: Implement
+                int numOfPlayers = oNumOfPlayersC.getSelectedIndex() + 2;
+                int reportResults = oReportResultsC.getSelectedIndex();
+                int pausing = oPauseBetweenGamesC.getSelectedIndex();
+                GameEngine g = new GameEngine(numOfPlayers, numOfGames, reportResults, pausing);
             }
         }
     }
