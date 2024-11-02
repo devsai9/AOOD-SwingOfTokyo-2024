@@ -1,3 +1,5 @@
+import players.Player;
+
 import javax.swing.*;
 import javax.swing.table.DefaultTableCellRenderer;
 import javax.swing.table.DefaultTableModel;
@@ -286,6 +288,21 @@ public class SwingGUI {
                 JOptionPane.showMessageDialog(frame, "File not found: " + fileName, "Error", JOptionPane.ERROR_MESSAGE);
                 return false;
             }
+
+            if (!fileName.startsWith("Player")) {
+                JOptionPane.showMessageDialog(frame, "File " + fileName + " does not follow naming convention for Player subclasses.", "Error", JOptionPane.ERROR_MESSAGE);
+                return false;
+            }
+
+             try {
+                 Class playerClass = Class.forName("players." + playersTable.getValueAt(i, 1));
+
+                 if (!Player.class.isAssignableFrom(playerClass)) {
+                     JOptionPane.showMessageDialog(frame, fileName + " is not of type Player", "Error", JOptionPane.ERROR_MESSAGE);
+                 }
+             } catch (ClassNotFoundException e) {
+                 JOptionPane.showMessageDialog(frame, "Error loading " + fileName + " class.", "Error", JOptionPane.ERROR_MESSAGE);
+             }
         }
 
         return true;
