@@ -1,10 +1,14 @@
-import javax.swing.SwingWorker;
+import javax.swing.*;
+import java.lang.reflect.Constructor;
 import java.util.Arrays;
+import java.util.List;
+
 import players.*;
 
 public class GameEngine {
     private State state = new State();
     private Player[] players;
+    private String[] playerClassNames;
     private boolean[] deadPlayers;
 
     private int playersLeft = 0;
@@ -15,100 +19,174 @@ public class GameEngine {
     int outputting;
     int pausing;
 
-    public GameEngine(int numOfPlayers, int numOfGames, int outputtingInterval, int pausing, SwingGUI.Results logger) {
+    public GameEngine(int numOfPlayers, String[] players, int numOfGames, int outputtingInterval, int pausing, SwingGUI.Results logger) {
         this.logger = logger;
 
-        players = new Player[numOfPlayers];
+        this.players = new Player[numOfPlayers];
+        this.playerClassNames = players;
         deadPlayers = new boolean[numOfPlayers];
 
         outputting = outputtingInterval;
-        this.pausing = pausing;
+        this.pausing = pausing + 1;
 
-        // Run the game in a SwingWorker
-        new GameWorker(numOfGames).execute();
+        // Start game logic thread
+        GameLogicThread gameLogicThread = new GameLogicThread(numOfGames);
+        gameLogicThread.start();
     }
 
-    private class GameWorker extends SwingWorker<int[], String> {
+    private class GameLogicThread extends Thread {
         private int numOfGames;
 
-        public GameWorker(int numOfGames) {
+        public GameLogicThread(int numOfGames) {
             this.numOfGames = numOfGames;
         }
 
         @Override
-        protected int[] doInBackground() {
-            int[] results;
+        public void run() {
+            int[] results = runXGames(numOfGames);
 
-            results = runXGames(numOfGames);
+            // After the game logic is done, update the GUI
+            publishResults(results);
+        }
+
+        public void publishGameLog(List<String> gameLog) {
+            // System.out.println(Arrays.toString(gameLog.toArray()));
+            SwingUtilities.invokeLater(() -> {
+                for (String log : gameLog) {
+                    logger.log(log);
+                }
+            });
+        }
+
+        // Run all games and return results
+        private int[] runXGames(int numOfGames) {
+            int[] results = new int[players.length];
+            Arrays.fill(results, 0);
+
+            for (int j = 0; j < players.length; j++) {
+                try {
+                    Class<?> temp = Class.forName("players." + playerClassNames[j]);
+                    Constructor<?> constructor = temp.getConstructor();
+                    Player player = (Player) constructor.newInstance();
+                    player.setId(j); // Ensure the player has a valid ID
+                    players[j] = player;
+                } catch (Exception e) {
+                    // If there's an issue, assign a fallback player
+                    players[j] = new PlayerNaive(); // Assuming PlayerNaive is a fallback implementation
+                    players[j].setId(j);
+                }
+            }
+
+            for (int i = 0; i < numOfGames; i++) {
+                state.setInTokyo(-1);
+                deadPlayers = new boolean[players.length];
+                playersLeft = players.length;
+
+                int[] tempH = new int[players.length];
+                int[] tempF = new int[players.length];
+                for (int h = 0; h < players.length; h++) {
+                    tempH[h] = 10;  // Default health
+                    tempF[h] = 0;   // Default fame
+                }
+
+                state.setPlayerHealths(tempH);
+                state.setPlayerFames(tempF);
+
+                state.setCurrentPlayer((int) Math.floor(Math.random() * players.length));
+                int winner = runGame(i + 1, this);
+                results[winner]++;
+                if (pausing <= GameIntervals.PER_GAME) pause(1000);
+            }
 
             return results;
         }
 
-        @Override
-        protected void process(java.util.List<String> chunks) {
-            for (String message : chunks) {
-                logger.log(message);
-            }
-        }
-
-        @Override
-        protected void done() {
-            try {
-                int[] results = get();
+        private void publishResults(int[] results) {
+            // Notify the UIWorker with the results
+            SwingUtilities.invokeLater(() -> {
+                logger.log("\n");
                 for (int j = 0; j < results.length; j++) {
-                    logger.log("Player #" + (j + 1) + " (AI) Won: " + (((double) results[j]) / numOfGames * 100.0) + "% of the time (" + results[j] + "/" + numOfGames + " games).");
+                    logger.log("Player #" + (j + 1) + " (" + playerClassNames[j] + ") won " + (((double) results[j]) / numOfGames * 100.0) + "% of the time (" + results[j] + "/" + numOfGames + " games).");
                 }
-            } catch (Exception e) {
-                logger.log("Error: " + e.getMessage());
-            }
+            });
         }
     }
-    
-    private int[] runXGames(int numOfGames) {
-        int[] results = new int[players.length];
 
-        for (int ijk = 0; ijk < results.length; ijk++) {
-            results[ijk] = 0;
-        }
-        
-        for (int i = 0; i < numOfGames; i++) {
-            state.setInTokyo(-1);
-
-            deadPlayers = new boolean[players.length];
-            
-            for (int j = 0; j < players.length; j++) {
-                players[j] = new PlayerNaive();
-                players[j].setId(j);
-                deadPlayers[j] = false;
-            }
-            
-            playersLeft = players.length;
-            
-            int[] tempH = new int[players.length];
-            int[] tempF = new int[players.length];
-            for (int h = 0; h < players.length; h++) {
-                tempH[h] = 10;
-                tempF[h] = 0;
-            }
-            
-            state.setPlayerHealths(tempH);
-            state.setPlayerFames(tempF);
-    
-            state.setCurrentPlayer((int) Math.floor(Math.random() * players.length));
-            int res = runGame(i + 1);
-            results[res]++;
-
-            if (pausing <= GameIntervals.PER_GAME) pause(1000);
-        }
-
-        // There will always be at least overall status reporting; no check needed
-        if (outputting <= GameIntervals.PER_GAME) logger.log("\n");
-//        for (int j = 0; j < results.length; j++) {
-//            logger.log("Player #" + (j+1) + " (AI) Won: " + (((double) results[j]) / numOfGames * 100.0) + "% of the time (" + results[j] + "/" + numOfGames + " games).");
+//    private int[] runXGames(int numOfGames) {
+//        int[] results = new int[players.length];
+//
+//        for (int ijk = 0; ijk < results.length; ijk++) {
+//            results[ijk] = 0;
 //        }
-
-        return results;
-    }
+//
+//        for (int j = 0; j < players.length; j++) {
+//            Class<?> temp;
+//            Player player;
+//            try {
+//                temp = Class.forName("players." + playerClassNames[j]);
+//
+//                if (Player.class.isAssignableFrom(temp)) {
+//                    Constructor<?> constructor;
+//
+//                    try {
+//                        constructor = temp.getConstructor();
+//                        playerConstructors[j] = constructor;
+//                    } catch (NoSuchMethodException e) {
+//                        System.out.println("No suitable constructor for player: " + playerClassNames[j]);
+//                        playerConstructors[j] = null;
+//                        players[j] = new PlayerNaive();
+//                        players[j].setId(j);
+//                        continue;
+//                    }
+//
+//                    try {
+//                        player = (Player) constructor.newInstance();
+//                    } catch (InstantiationException | IllegalAccessException | InvocationTargetException e) {
+//                        System.out.println("Error: " + e.getMessage());
+//                        playerConstructors[j] = null;
+//                        players[j] = new PlayerNaive();
+//                        players[j].setId(j);
+//                        continue;
+//                    }
+//
+//                    players[j] = player;
+//                    players[j].setId(j);
+//                }
+//            } catch (ClassNotFoundException e) {
+//                playerConstructors[j] = null;
+//                players[j] = new PlayerNaive();
+//                players[j].setId(j);
+//            }
+//        }
+//
+//        for (int i = 0; i < numOfGames; i++) {
+//            state.setInTokyo(-1);
+//
+//            deadPlayers = new boolean[players.length];
+//
+//            playersLeft = players.length;
+//
+//            int[] tempH = new int[players.length];
+//            int[] tempF = new int[players.length];
+//            for (int h = 0; h < players.length; h++) {
+//                tempH[h] = 10;
+//                tempF[h] = 0;
+//            }
+//
+//            state.setPlayerHealths(tempH);
+//            state.setPlayerFames(tempF);
+//
+//            state.setCurrentPlayer((int) Math.floor(Math.random() * players.length));
+//            int res = runGame(i + 1);
+//            results[res]++;
+//
+//            // if (outputting <= GameIntervals.PER_GAME) logger.log("\n");
+//            if (pausing <= GameIntervals.PER_GAME) pause(1000);
+//        }
+//
+//
+//        return results;
+//    }
 
     private void setFameHelper(int player, int deltaFame) {
         if (player == -1) return;
@@ -116,13 +194,13 @@ public class GameEngine {
             int[] playerFamesTemp = state.getPlayerFames();
             playerFamesTemp[player] += deltaFame;
             state.setPlayerFames(playerFamesTemp);
-            
+
             players[player].setFame(playerFamesTemp[player] + deltaFame);
         } else {
             int[] playerFamesTemp = state.getPlayerFames();
             playerFamesTemp[player] = 20;
             state.setPlayerFames(playerFamesTemp);
-            
+
             players[player].setFame(20);
         }
     }
@@ -134,23 +212,23 @@ public class GameEngine {
             int[] playerHealthsTemp = state.getPlayerHealths();
             playerHealthsTemp[player] = 12;
             state.setPlayerHealths(playerHealthsTemp);
-            
+
             players[player].setHealth(12);
         } else if (state.getPlayerHealths()[player] + deltaHealth < 0) {
             // Health tries to go below 0
             int[] playerHealthsTemp = state.getPlayerHealths();
             playerHealthsTemp[player] = 0;
             state.setPlayerHealths(playerHealthsTemp);
-            
+
             players[player].setHealth(0);
         } else {
             int[] playerHealthsTemp = state.getPlayerHealths();
             playerHealthsTemp[player] += deltaHealth;
             state.setPlayerHealths(playerHealthsTemp);
-            
+
             players[player].setHealth(playerHealthsTemp[player] + deltaHealth);
         }
-        
+
     }
 
     private void updateTokyoStarter() {
@@ -164,7 +242,7 @@ public class GameEngine {
         }
         catch (Exception e) {}
     }
-    
+
     private boolean contains(int num, int[] playerFames) {
         for (int i = 0; i<playerFames.length; i++) {
             if (playerFames[i] == num) {
@@ -174,18 +252,20 @@ public class GameEngine {
         return false;
     }
 
-    private int runGame(int round) {
+    private int runGame(int round, GameLogicThread worker) {
         // Start of game
         int numHavePlayed = 0;
+        java.util.List<String> guiUpdateBuffer = new java.util.ArrayList<String>();
+
         while (playersLeft > 1 && !contains(20, state.getPlayerFames())) {
             // For each player...
             if (state.getPlayerHealths()[state.getCurrentPlayer()] == 0) {
                 // Player is dead
                 if (pausing == GameIntervals.PER_TURN) pause(500);
                 if (outputting == GameIntervals.PER_TURN) {
-                    logger.log("———————New Turn———————\n \nPlayer #" + (state.getCurrentPlayer() + 1) + ": Dead");
+                    guiUpdateBuffer.add("———————New Turn———————\n \nPlayer #" + (state.getCurrentPlayer() + 1) + ": Dead");
                 }
-                
+
                 // Increasing the health of the person who killed it
                 if (deadPlayers[state.getCurrentPlayer()] == false) {
                     if (state.getCurrentPlayer() == 0) {
@@ -199,9 +279,9 @@ public class GameEngine {
                     }
                 }
                 deadPlayers[state.getCurrentPlayer()] = true;
-                
+
                 state.setCurrentPlayer(state.getCurrentPlayer() + 1);
-                
+
                 if (state.getCurrentPlayer() >= players.length) state.setCurrentPlayer(0);
                 numHavePlayed++;
 
@@ -222,9 +302,9 @@ public class GameEngine {
 
                 // Only prints the data and roll if the player is still alive
                 if (pausing == GameIntervals.PER_TURN) pause(500);
-                if (outputting == GameIntervals.PER_TURN) logger.log("———————New Turn———————\n \nPlayer #" + (state.getCurrentPlayer() + 1) + ": \nHealth: " + state.getPlayerHealths()[state.getCurrentPlayer()] + "\nFame: " + state.getPlayerFames()[state.getCurrentPlayer()]);
-                
-                if (numHavePlayed != 0 && outputting == GameIntervals.PER_TURN) logger.log("Player #" + (state.getInTokyo() + 1) + " is in Tokyo");
+                if (outputting == GameIntervals.PER_TURN) guiUpdateBuffer.add("———————New Turn———————\n \nPlayer #" + (state.getCurrentPlayer() + 1) + ": \nHealth: " + state.getPlayerHealths()[state.getCurrentPlayer()] + "\nFame: " + state.getPlayerFames()[state.getCurrentPlayer()]);
+
+                if (numHavePlayed != 0 && outputting == GameIntervals.PER_TURN) guiUpdateBuffer.add("Player #" + (state.getInTokyo() + 1) + " is in Tokyo");
 
                 // Checking to see if player wants to leave tokyo
                 if (state.getCurrentPlayer() == state.getInTokyo() && players[state.getCurrentPlayer()].leaveTokyo(state.getCurrentTurn(), state.getCurrentPlayer(), state.getInTokyo(), state.getDice(), state.getPlayerHealths(), state.getPlayerFames())) {
@@ -267,24 +347,18 @@ public class GameEngine {
                 }
 
                 if (outputting == GameIntervals.PER_TURN) {
-                    StringBuilder temp = new StringBuilder("Final dice roll: ");
-
-                    for (int finalDiceRoll1 : userDiceRoll) {
-                        temp.append(finalDiceRoll1).append(" ");
-                    }
-
-                    logger.log(temp.toString());
+                    guiUpdateBuffer.add("Final dice roll: " + Arrays.toString(userDiceRoll) + "\n");
                 }
-                
+
                 // Increasing the current turn
                 state.setCurrentTurn(state.getCurrentTurn() + 1);
-                
+
                 boolean extraTurn = processDice(userDiceRoll);
-                
+
                 if (extraTurn) {
                     // Increasing the current turn
                     // state.setCurrentTurn(state.getCurrentTurn() + 1);
-                    
+
                     for (int i = 0; i < userDiceRoll.length; i++) {
                         userDiceRoll[i] = ((int) Math.floor(Math.random() * 6)) + 1;
                     }
@@ -292,13 +366,7 @@ public class GameEngine {
                     userDiceRoll = rollDice(userDiceRoll);
                     processDice(userDiceRoll);
                     if (outputting == GameIntervals.PER_TURN) {
-                        StringBuilder temp = new StringBuilder("Second final dice roll: ");
-
-                        for (int finalDiceRollTwo : userDiceRoll) {
-                            temp.append(finalDiceRollTwo).append(" ");
-                        }
-
-                        logger.log(temp.toString());
+                        guiUpdateBuffer.add("Second final dice roll: " + Arrays.toString(userDiceRoll) + "\n");
                     }
                 }
             }
@@ -313,19 +381,21 @@ public class GameEngine {
         if (playersLeft == 1) {
             for (int j = 0; j < state.getPlayerHealths().length; j++) {
                 if (state.getPlayerHealths()[j] != 0) {
-                    if (outputting <= GameIntervals.PER_GAME) logger.log((outputting == GameIntervals.PER_TURN ? "\n" : "") + "Round #" + round + ": Player #" + (j + 1) + " has won!");
+                    if (outputting <= GameIntervals.PER_GAME) guiUpdateBuffer.add((outputting == GameIntervals.PER_TURN ? "\n" : "") + "Round #" + round + ": Player #" + (j + 1) + " (" + playerClassNames[j] + ") has won!");
+                    worker.publishGameLog(guiUpdateBuffer);
                     return j;
                 }
             }
         } else {
             for (int index = 0; index < state.getPlayerFames().length; index++) {
                 if (state.getPlayerFames()[index] == 20) {
-                    if (outputting <= GameIntervals.PER_GAME) logger.log((outputting == GameIntervals.PER_TURN ? "\n" : "") + "Round #" + round + ": Player #" + (index + 1) + " has won!");
+                    if (outputting <= GameIntervals.PER_GAME) guiUpdateBuffer.add((outputting == GameIntervals.PER_TURN ? "\n" : "") + "Round #" + round + ": Player #" + (index + 1) + " (" + playerClassNames[index] + ") has won!");
+                    worker.publishGameLog(guiUpdateBuffer);
                     return index;
                 }
             }
         }
-        
+
         return -1;
     }
 

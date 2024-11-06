@@ -120,11 +120,11 @@ public class PlayerAI_GeeterPriffin extends Player {
             }
         }
         
-        for (int kraftmacncheese = 0; kraftmacncheese < dice.length; kraftmacncheese++) {
-            System.out.print(dice[kraftmacncheese]);
-            System.out.print(output[kraftmacncheese]);
-        }
-        System.out.println();
+//        for (int kraftmacncheese = 0; kraftmacncheese < dice.length; kraftmacncheese++) {
+//            System.out.print(dice[kraftmacncheese]);
+//            System.out.print(output[kraftmacncheese]);
+//        }
+//        System.out.println();
 
         return output;
     }

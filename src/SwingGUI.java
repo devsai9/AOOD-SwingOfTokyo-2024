@@ -14,7 +14,6 @@ import java.io.File;
 // TODO: Make the Other Options Panel have a border radius
 // TODO: Make the Players Table have a border radius
 // TODO: Fix Players Table Resizing weirdness
-// TODO: Add picture as the face for the Play button
 
 @SuppressWarnings("StringTemplateMigration")
 public class SwingGUI {
@@ -131,6 +130,9 @@ public class SwingGUI {
 
         frame.add(mainPanel);
         frame.setVisible(true);
+
+        playButton.setText("");
+        playButton.setIcon(scaleImage("/assets/playButton.png", playButton.getWidth(), 1049, 339));
     }
 
     // Helper methods
@@ -181,7 +183,7 @@ public class SwingGUI {
         gbc.gridy = 3;
         options.add(oPauseBetweenGamesL, gbc);
 
-        oPauseBetweenGamesC = new JComboBox<>(new String[]{"turns", "games", "never"});
+        oPauseBetweenGamesC = new JComboBox<>(new String[]{"games", "never"});
         gbc.gridx = 1;
         options.add(oPauseBetweenGamesC, gbc);
 
@@ -196,10 +198,14 @@ public class SwingGUI {
         options.add(oNumOfGamesT, gbc);
 
         playButton = new JButton("PLAY");
-        playButton.setBackground(new Color(102, 255, 255));
+        playButton.setOpaque(false);
+        playButton.setContentAreaFilled(false);
+        playButton.setBorderPainted(false);
         playButton.setFont(new Font("Arial", Font.BOLD, 16));
         playButton.setBorder(BorderFactory.createEmptyBorder(10, 10, 10, 10));
+        playButton.setCursor(Cursor.getPredefinedCursor(Cursor.HAND_CURSOR));
         playButton.addActionListener(new playButtonClick());
+
         gbc.gridx = 0;
         gbc.gridy = 5;
         gbc.gridwidth = 2;
@@ -285,6 +291,11 @@ public class SwingGUI {
         String playersFolderPath = pathPrefix + "/players/";
 
         for (int i = 0; i < playersTable.getRowCount(); i++) {
+            if (playersTable.getValueAt(i, 1).toString().isBlank()) {
+                JOptionPane.showMessageDialog(frame, "Can not have empty cells", "Error", JOptionPane.ERROR_MESSAGE);
+                return false;
+            }
+
             String fileName = playersTable.getValueAt(i, 1) + ".java";
             File file = new File(playersFolderPath + fileName);
 
@@ -309,9 +320,11 @@ public class SwingGUI {
 
                  if (!Player.class.isAssignableFrom(playerClass)) {
                      JOptionPane.showMessageDialog(frame, fileName + " is not of type Player", "Error", JOptionPane.ERROR_MESSAGE);
+                     return false;
                  }
              } catch (ClassNotFoundException e) {
                  JOptionPane.showMessageDialog(frame, "Error loading " + fileName + " class.", "Error", JOptionPane.ERROR_MESSAGE);
+                 return false;
              }
         }
 
@@ -374,9 +387,15 @@ public class SwingGUI {
                 int reportResults = oReportResultsC.getSelectedIndex();
                 int pausing = oPauseBetweenGamesC.getSelectedIndex();
 
+                String[] players = new String[numOfPlayers];
+
+                for (int i = 0; i < playersTable.getRowCount(); i++) {
+                    players[i] = playersTable.getValueAt(i, 1).toString();
+                }
+
                 Results r = new Results();
 
-                GameEngine g = new GameEngine(numOfPlayers, numOfGames, reportResults, pausing, r);
+                GameEngine g = new GameEngine(numOfPlayers, players, numOfGames, reportResults, pausing, r);
             }
         }
     }
@@ -414,11 +433,12 @@ public class SwingGUI {
             resultsPanel.add(resultsLabel);
 
             resultsText = new JTextArea();
+            resultsText.setLineWrap(true);
             resultsText.setText("Waiting for output from game...");
 
             resultsText.setFont(new Font("SansSerif", Font.PLAIN, 14));
             resultsText.setForeground(Color.WHITE);
-            resultsText.setBackground(new Color(40, 100, 200)); // Matching background
+            resultsText.setBackground(new Color(40, 100, 200));
             resultsText.setEditable(false);
 
             resultsText.setBorder(BorderFactory.createEmptyBorder(10, 10, 10, 10));
