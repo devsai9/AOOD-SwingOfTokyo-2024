@@ -12,7 +12,7 @@ public class JPanelWithBg extends JPanel {
         try {
             bgImg = ImageIO.read(new File(fileName));
         } catch (IOException e) {
-            System.out.println("Background image not found");
+            System.out.println("Background image not found \nHINT: Did you maybe forget to change the pathPrefix variable in the SwingGUI class?");
             System.exit(404);
         }
     }

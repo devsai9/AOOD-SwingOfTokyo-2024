@@ -11,14 +11,12 @@ import java.awt.event.ComponentEvent;
 import java.io.File;
 
 // TODO: Maybe add row deletion
-// TODO: Make the Other Options Panel have a border radius
-// TODO: Make the Players Table have a border radius
 // TODO: Fix Players Table Resizing weirdness
 
 @SuppressWarnings("StringTemplateMigration")
 public class SwingGUI {
 
-    JFrame frame;
+    static JFrame frame;
     Timer resizeTimer;
 
     static JPanel mainPanel = new JPanel(new CardLayout());
@@ -26,7 +24,7 @@ public class SwingGUI {
     // Main Window
     JPanelWithBg panel;
 
-    JPanel options;
+    RoundedJPanel options;
     JLabel oHeading;
     JLabel oNumOfPlayersL;
     JComboBox<String> oNumOfPlayersC;
@@ -55,7 +53,8 @@ public class SwingGUI {
     final static String pathPrefix = "D:/Code_Projects/AOOD-KOTUI-2024/src/";
 
     public SwingGUI() {
-        frame = new JFrame("King of Tokyo GUI");
+        frame = new JFrame("Home - King of Tokyo GUI");
+        frame.setIconImage(Toolkit.getDefaultToolkit().getImage("../assets/kingOfTokyoLogoForFrame.png"));
         frame.addComponentListener(new ComponentAdapter() {
             public void componentResized(ComponentEvent e) {
                 if (resizeTimer != null && resizeTimer.isRunning()) {
@@ -81,7 +80,7 @@ public class SwingGUI {
         panel.setBackground(Color.WHITE);
         panel.setLayout(new GridBagLayout());
 
-        options = new JPanel();
+        options = new RoundedJPanel(20);
         initializeOptionsPanel();
 
         GridBagConstraints gbc = new GridBagConstraints();
@@ -132,7 +131,7 @@ public class SwingGUI {
         frame.setVisible(true);
 
         playButton.setText("");
-        playButton.setIcon(scaleImage("/assets/playButton.png", playButton.getWidth(), 1049, 339));
+        playButton.setIcon(scaleImage("assets/playButton.png", playButton.getWidth(), 1049, 339));
     }
 
     // Helper methods
@@ -338,7 +337,7 @@ public class SwingGUI {
         return headerHeight + (rowHeight * numberOfRows);
     }
 
-    private ImageIcon scaleImage(String relPath, double desiredWidth, double imgNativeWidth, double imgNativeHeight) {
+    private static ImageIcon scaleImage(String relPath, double desiredWidth, double imgNativeWidth, double imgNativeHeight) {
         return  new ImageIcon(new ImageIcon(pathPrefix + relPath).getImage().getScaledInstance((int) desiredWidth, (int) (desiredWidth * (imgNativeHeight / imgNativeWidth)), Image.SCALE_SMOOTH));
     }
 
@@ -395,7 +394,7 @@ public class SwingGUI {
 
                 Results r = new Results();
 
-                GameEngine g = new GameEngine(numOfPlayers, players, numOfGames, reportResults, pausing, r);
+                new GameEngine(numOfPlayers, players, numOfGames, reportResults, pausing, r);
             }
         }
     }
@@ -406,7 +405,9 @@ public class SwingGUI {
         String logged = "";
 
         public Results() {
+            frame.setTitle("Output - King of Tokyo GUI");
             resPanel.setLayout(new GridBagLayout());
+            CardLayout cl = (CardLayout) (mainPanel.getLayout());
 
             JPanel titleWrapper = new JPanel();
             titleWrapper.setOpaque(false);
@@ -421,10 +422,10 @@ public class SwingGUI {
             JPanel centerWrapperPanel = new JPanel(new FlowLayout(FlowLayout.CENTER, 0, 0));
             centerWrapperPanel.setOpaque(false);
 
-            JPanel resultsPanel = new JPanel();
+            RoundedJPanel resultsPanel = new RoundedJPanel(20);
             resultsPanel.setBackground(new Color(40, 100, 200));
             resultsPanel.setLayout(new BoxLayout(resultsPanel, BoxLayout.Y_AXIS));
-            resultsPanel.setPreferredSize(new Dimension(400, 400));
+            resultsPanel.setPreferredSize(new Dimension(600, 300));
 
             JLabel resultsLabel = new JLabel("Results & Reporting");
             resultsLabel.setFont(new Font("SansSerif", Font.BOLD, 20));
@@ -435,21 +436,43 @@ public class SwingGUI {
             resultsText = new JTextArea();
             resultsText.setLineWrap(true);
             resultsText.setText("Waiting for output from game...");
-
             resultsText.setFont(new Font("SansSerif", Font.PLAIN, 14));
             resultsText.setForeground(Color.WHITE);
-            resultsText.setBackground(new Color(40, 100, 200));
+            resultsText.setBackground(new Color(0, 0, 0, 0));
+            resultsText.setOpaque(false);
             resultsText.setEditable(false);
-
-            resultsText.setBorder(BorderFactory.createEmptyBorder(10, 10, 10, 10));
+            resultsText.setBorder(BorderFactory.createEmptyBorder(10, 10, 30, 10));
 
             JScrollPane scrollPane = new JScrollPane(resultsText);
             scrollPane.setBorder(BorderFactory.createEmptyBorder());
+            scrollPane.setOpaque(false);
+            scrollPane.getViewport().setOpaque(false);
 
             resultsPanel.add(Box.createRigidArea(new Dimension(0, 10)));
             resultsPanel.add(scrollPane);
 
             centerWrapperPanel.add(resultsPanel);
+
+            JButton goBack = new JButton("PLAY AGAIN");
+            goBack.setFont(new Font("SansSerif", Font.BOLD, 20));
+            goBack.setForeground(Color.WHITE);
+            goBack.setOpaque(false);
+            goBack.setContentAreaFilled(false);
+            goBack.setBorderPainted(false);
+            goBack.setFocusPainted(false);
+            goBack.setCursor(Cursor.getPredefinedCursor(Cursor.HAND_CURSOR));
+            goBack.setAlignmentX(Component.CENTER_ALIGNMENT);
+            goBack.setFocusPainted(false);
+            goBack.addActionListener(new ActionListener() {
+                @Override
+                public void actionPerformed(ActionEvent e) {
+                    frame.setTitle("Home - King of Tokyo GUI");
+                    resPanel.removeAll();
+                    resPanel.revalidate();
+                    resPanel.repaint();
+                    cl.show(mainPanel, "Main");
+                }
+            });
 
             GridBagConstraints gbc = new GridBagConstraints();
             gbc.gridx = 0;
@@ -462,8 +485,16 @@ public class SwingGUI {
             gbc.weighty = 1;
             resPanel.add(centerWrapperPanel, gbc);
 
-            CardLayout cl = (CardLayout) (mainPanel.getLayout());
+            gbc.gridx = 0;
+            gbc.gridy = 2;
+            gbc.weighty = 1;
+            gbc.anchor = GridBagConstraints.CENTER;
+            resPanel.add(goBack, gbc);
+
             cl.show(mainPanel, "Results");
+
+            goBack.setIcon(scaleImage("assets/playAgainButton.png", goBack.getWidth() + 75, 598, 195));
+            goBack.setText("");
         }
 
         public void log(String s) {
