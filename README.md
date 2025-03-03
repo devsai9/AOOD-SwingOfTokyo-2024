@@ -8,16 +8,19 @@ As a part of an educational project on Java, our AOOD class worked in groups to 
 - A Graphical User Interface (GUI)
 - Inputs to change game settings
 - Dynamic player file reading system that can read from folders
+  - Users can code and upload their own custom players to the `/players/` folder
+- AI Players (comes with [PlayerNaive](https://github.com/devsai9/AOOD-KingOfTokyo-2024/blob/main/PlayerNaive.java) and [PlayerAI_GeeterPriffin](https://github.com/devsai9/AOOD-KingOfTokyo-2024/blob/main/PlayerAI_GeeterPriffin.java))
 - A live output of the game play
 - Game mecahnics of King of Tokyo (e.g. managing the player in Tokyo, turn-based game play, etc.)
-- AI Players [PlayerNaive](https://github.com/devsai9/AOOD-KingOfTokyo-2024/blob/main/PlayerNaive.java) and [PlayerAI_GeeterPriffin](https://github.com/devsai9/AOOD-KingOfTokyo-2024/blob/main/PlayerAI_GeeterPriffin.java))
 - Tests for some of the major code
 
 ## What we learned/refined
 1. Coding in Java
 2. Using Java Swing
-3. Object-Oriented Programming
-4. Unit Testing
+3. Java Swing Workers
+4. Using Threads in Java
+5. Object-Oriented Programming
+6. Unit Testing
 
 ## Technologies used
 - Java
