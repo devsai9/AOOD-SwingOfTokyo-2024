@@ -25,3 +25,5 @@ As a part of an educational project on Java, our AOOD class worked in groups to 
 ## Technologies used
 - Java
 - Java Swing
+- JetBrains IntelliJ IDEA
+- Git & GitHub
